@@ -1,0 +1,35 @@
+name: Build PSP homebrew
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el proyecto
+        uses: actions/checkout@v4
+
+      - name: Compilar para PSP
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/src" \
+            -w /src \
+            pspdev/pspdev:latest \
+            sh -lc 'mkdir -p build && cd build && psp-cmake .. && make -j2'
+
+      - name: Guardar el EBOOT.PBP
+        run: |
+          mkdir -p output/PSP/GAME/DashHomebrew
+          EBOOT="$(find build -name EBOOT.PBP -type f -print -quit)"
+          test -n "$EBOOT"
+          cp "$EBOOT" output/PSP/GAME/DashHomebrew/EBOOT.PBP
+
+      - name: Publicar descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: DashHomebrew-EBOOT
+          path: output/PSP/GAME/DashHomebrew/EBOOT.PBP
+          
