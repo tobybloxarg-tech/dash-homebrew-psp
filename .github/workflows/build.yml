@@ -12,22 +12,28 @@ jobs:
       - name: Descargar el proyecto
         uses: actions/checkout@v4
 
-      - name: Compilar para PSP
+      - name: Instalar SDK de PSP
         run: |
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/src" \
-            -w /src \
-            pspdev/pspdev:latest \
-            sh -lc 'mkdir -p build && cd build && psp-cmake .. && make -j2'
+          curl -L --fail https://github.com/pspdev/pspdev/releases/latest/download/pspdev-ubuntu-latest-x86_64.tar.gz -o /tmp/pspdev.tar.gz
+          tar -xzf /tmp/pspdev.tar.gz -C "$HOME"
+          echo "\(HOME/pspdev/bin" >> "\)GITHUB_PATH"
+          echo "PSPDEV=\(HOME/pspdev" >> "\)GITHUB_ENV"
 
-      - name: Guardar el EBOOT.PBP
+      - name: Compilar
+        run: |
+          mkdir -p build
+          cd build
+          psp-cmake ..
+          make -j2
+
+      - name: Preparar descarga
         run: |
           mkdir -p output/PSP/GAME/DashHomebrew
           EBOOT="$(find build -name EBOOT.PBP -type f -print -quit)"
           test -n "$EBOOT"
           cp "$EBOOT" output/PSP/GAME/DashHomebrew/EBOOT.PBP
 
-      - name: Publicar descarga
+      - name: Publicar EBOOT
         uses: actions/upload-artifact@v4
         with:
           name: DashHomebrew-EBOOT
